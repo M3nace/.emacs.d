@@ -1,0 +1,650 @@
+#+AUTHOR: Camille Gardet
+#+TITLE: Configuration de GNU Emacs
+
+* À propos
+
+Ca fait un bout de temps que j'utilise Emacs (depuis 2008), et après avoir essayé (avec plus ou moins
+de succès) certaines configuration, je décide de tout rassembler ici.
+
+Ma configuration tourne exclusivement autour de la programmation, et s'inspire d'une multitude
+d'autres configuration que j'ai rencontré. Voici une liste non exhaustive, n'hésitez pas à les
+consulter :
+
+- [[https://github.com/andreyorst/dotfiles][Andrey Orst]]
+- [[https://github.com/howardabrams/dot-files][Howard Abrams]]
+- [[https://github.com/hrs/dotfiles][Harry R. Schwartz]]
+- [[https://github.com/rememberYou/.emacs.d][Terencio Agozzino]]
+- [[https://github.com/syl20bnr/spacemacs][Projet Spacemacs]]
+- [[https://github.com/hlissner/doom-emacs][Projet Doom-Emacs]]
+
+Il est largement envisageable que ma configuration ne soit pas optimisée, ou que des lignes
+superflues soient présentes. Si c'est le cas, n'hésitez pas à ouvrir un ticket ou à me
+contacter directement.
+
+* Pré-requis
+
+Pour faire tourner cette configuration (ou une partie), vous aurez besoin de certains programmes
+tiers que votre gestionnaire paquet possède sûrement :
+
+** Police
+
+[[https://fonts.google.com/specimen/Source+Code+Pro][Source Code Pro]] qui est une excellente police sans-serif monospace pour la programmation.
+
+** Linter
+
+Les linters ont des fichiers de configurations situés soit à la racine de votre =home= soit
+à la racine du projet sur lequel vous travaillez.
+
+| Linter | Langage | Fichier de conf. |
+|--------|---------|------------------|
+| [[https://stylelint.io/][stylelint]] | CSS (compatible LESS et SASS) | =~/.stylelintrc.json= |
+| [[http://flake8.pycqa.org/en/latest/][flake8]] | Python | =~/.flake8rc= |
+| [[https://eslint.org/][ESLint]] | JavaScript | =~/.eslintrc= |
+|--------|---------|------------------|
+
+Il y a sûrement d'autres linters existant, je pense notamment à l'excellent [[https://github.com/python/black][Black]] pour Python, ou encore
+[[https://flow.org/][Flow]] pour JavaScript, mais cette configuration me suffit.
+
+** LSP
+
+LSP ? Language Server Protocol est un standard introduit par Microsoft à l'occasion de la sortie de
+Visual Studio Code. C'est un outils qui permet de découpler les fonctionnalités autour d'un langage
+de l'éditeur de texte. Ces fonctionnalités sont par exemple la complétion, la définition de variables
+et fonctions, le refactoring, etc.
+
+J'utilise :
+
+- [[https://github.com/palantir/python-language-server][python-language-server]]
+- [[https://github.com/sourcegraph/javascript-typescript-langserver][javascript-typescript-langserver]]
+- [[https://github.com/vscode-langservers/vscode-html-languageserver-bin][vscode-html-languageserver]]
+- [[https://github.com/vscode-langservers/vscode-css-languageserver-bin][vscode-css-languageserver]] (compatible LESS et SASS)
+
+Ces serveurs s'interfacent grâce à l'excellent projet [[https://github.com/emacs-lsp][emacs-lsp]], dont nous verrons la configuration
+plus tard.
+
+#+begin_note
+Pour JavaScript, il existe le serveur [[https://github.com/tbodt/js-langserver][js-langserver]], qui embarque =ESLint= et =Tern=, mais je ne suis
+pas parvenus à le configurer et l'intégrer avec =emacs-lsp=.
+#+end_note
+
+* Initialisation d'Emacs
+
+Assez discuté ! On rentre dans le concret avec le début de la configuration, ce que contiendra
+=~/.emacs.d/config.el=, issu de ce bô fichier.
+
+** Sources des paquets
+
+Depuis sa version 24, Emacs a la bon goût de passer par des paquets pour ses fonctionnalités.
+Du coup, on ajoute les liens des dépôts les plus connus.
+
+#+begin_src emacs-lisp :tangle yes
+(setq package-archives '(("org"       . "https://orgmode.org/elpa/")
+                         ("gnu"       . "http://elpa.gnu.org/packages/")
+                         ("melpa"     . "https://melpa.org/packages/")
+                         ("marmalade" . "https://marmalade-repo.org/packages/")))
+#+end_src
+
+** Manager de paquets
+
+Qui dit paquets, dit manager de paquets. C'est donc l'incontournable [[https://github.com/jwiegley/use-package][use-package]] qui est utilisé.
+
+#+begin_src emacs-lisp :tangle yes
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+
+(use-package use-package-ensure
+  :config
+  (setq use-package-always-ensure t))
+#+end_src
+
+Je trouve que la liste des paquets obtenue par la commande =list-packages= est assez pauvre,
+j'utilise [[https://github.com/Malabarba/paradox][paradox]], qui rajoute pas mal de QoL.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package paradox
+  :config
+  (paradox-enable))
+#+end_src
+
+On clot cette section avec la compilation des paquets
+
+#+begin_src emacs-lisp :tangle yes
+(use-package auto-compile
+  :config
+  (auto-compile-on-load-mode))
+  :init
+  (setq load-prefer-newer t)
+#+end_src
+
+* Démarrage
+
+** Valeurs par défaut
+
+On profite de la présence de nombreuses variables de configurations pour en redéfinir quelques unes.
+
+#+begin_src emacs-lisp :tangle yes
+(when (fboundp 'set-charset-priority)        ; UTF-8 as the default coding system
+      (set-charset-priority 'unicode))       ; pretty
+(prefer-coding-system 'utf-8)                ; pretty
+(setq selection-coding-system 'utf-8         ; pretty
+      locale-coding-system 'utf-8            ; please
+      nsm-settings-file (concat user-emacs-directory "nsm/network-security.data")
+      gnutls-min-prime-bits 4096             ; Remove the warnings from the GnuTLS library when using HTTPS
+      scroll-conservatively 10000            ; Fix the scrolling to keep point in the center
+      scroll-preserve-screen-position t)     ; Fix the scrolling to keep point in the center
+      visible-bell t                         ; No beeps
+
+(setq-default
+      ad-redefinition-action 'accept         ; Silence advised function warnings
+      apropos-do-all t                       ; Make `apropos' more useful
+      auto-mode-case-fold nil
+      autoload-compute-prefixes nil
+      bidi-display-reordering nil            ; Disable bidirectional text for tiny performance boost
+      blink-matching-paren nil               ; Don't blink--too distracting
+      cursor-in-non-selected-windows nil     ; Hide cursors in other windows
+      delete-selection-mode t
+      display-line-numbers-width 3
+      display-time-default-load-average nil  ; Don't display load average
+      ffap-machine-p-known 'reject           ; Don't ping things that look like domain names
+      find-file-visit-truename t             ; Resolve symlinks when opening files
+      ;; remove continuation arrow on right fringe
+      fringe-indicator-alist (delq (assq 'continuation fringe-indicator-alist)
+                                    fringe-indicator-alist)
+      highlight-nonselected-windows nil
+      ibuffer-use-other-window t
+      idle-update-delay 2                    ; Update ui less often
+      image-animate-loop t
+      indent-tabs-mode nil                   ; Indent with spaaaaaaaaaaaaace
+      indicate-buffer-boundaries nil
+      indicate-empty-lines nil
+      indent-tabs-mode nil                   ; Let's make sure that we only have spaces
+      ;; Be quiet at startup; don't load or display anything unnecessary
+      inhibit-startup-message t
+      inhibit-startup-echo-area-message user-login-name
+      inhibit-default-init t
+      initial-major-mode 'fundamental-mode
+      initial-scratch-message nil
+      ;; defer jit font locking slightly to [try to] improve Emacs performance
+      jit-lock-defer-time nil
+      jit-lock-stealth-nice 0.1
+      jit-lock-stealth-time 0.2
+      jit-lock-stealth-verbose nil
+      load-prefer-newer t                    ; Prefers the newest version of a file
+      mode-line-default-help-echo nil        ; Disable mode-line mouseovers
+      mouse-yank-at-point t                  ; Middle-click paste at point, not at click
+      scroll-step 1
+      tab-always-indent 'complete)           ; Tab key indent first, completion after
+
+(column-number-mode 1)                       ; Show the column number
+(fset 'yes-or-no-p 'y-or-n-p)                ; Short answer please
+#+end_src
+
+** Sauvegarde
+
+La sauvegarde c'est important, mais Emacs s'y prend un peu à l'arrache, alors on redéfinit ça :
+
+#+begin_src emacs-lisp :tangle yes
+(savehist-mode 1)
+
+(setq-default auto-save-list-file-name (concat user-emacs-directory "backups/auto-save-list"))
+(setq backup-directory-alist `(("." . ,(expand-file-name (concat user-emacs-directory "backups"))))
+      delete-old-versions nil
+      history-delete-duplicates t
+      history-length t
+      savehist-additional-variables '(kill-ring search-ring regexp-search-ring)
+      savehist-file (concat user-emacs-directory "backups/savehist")
+      savehist-save-minibuffer-history 1
+      version-control t
+      vc-make-backup-files t)
+
+(make-directory (concat user-emacs-directory "backups") t)
+#+end_src
+
+** Personnalisation
+
+Pour y charger des variables privées, ou la conf qu'Emacs essaie de rajouter en douce.
+
+#+begin_src emacs-lisp :tangle yes
+(setq-default custom-file (expand-file-name (concat user-emacs-directory "custom/custom.el")))
+(when (file-exists-p custom-file) (load custom-file t))
+#+end_src
+
+** Raccourcis clavier
+
+Le paquet [[https://github.com/noctuid/general.el][general]] en plus d'être puissant, s'interface à merveille avec =use-package=, en apportant
+le mot-clé =:general=.
+Je redéfinis quelques raccourcis, comme la création/destruction de frames, la navigation entre les
+frames :
+
+- <kbd>Alt 0</kbd> supprime la frame active
+- <kbd>Alt 1</kbd> supprime la frame inactive
+- <kbd>Alt 2</kbd> split la frame horizontalement
+- <kbd>Alt 3</kbd> split la frame verticalement
+- <kbd>Alt <flèches directionnelles></kbd> navigue entre les frames
+
+Le reste se passant d'explication.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package general
+  :config
+  (general-define-key
+   ;; Window management
+   [M-kp-0] 'delete-window
+   [M-kp-1] 'delete-other-windows
+   [M-kp-2] 'split-window-horizontally
+   [M-kp-3] 'split-window-vertically
+   ;; Move between different buffer
+   [M-up]    '(lambda () (interactive) (other-window -1))
+   [M-down]  'other-window
+   [M-left]  '(lambda () (interactive) (other-window -1))
+   [M-right] 'other-window
+   ;; Kill this buffer
+   "C-x k" 'kill-this-buffer
+   "C-x K" 'kill-buffer
+   ;; Other
+   "M-!" 'undo
+   "M-c" 'goto-line))
+#+end_src
+
+* Interface
+
+** Visuel
+
+Je vire les barres de défilement, les curseurs clignotants, les menus.
+
+#+begin_src emacs-lisp :tangle yes
+(when (window-system)
+  (blink-cursor-mode 0)
+  (tool-bar-mode 0)
+  (menu-bar-mode 0)
+  (when (fboundp 'horizontal-scroll-bar-mode)
+    (horizontal-scroll-bar-mode -1))
+  (scroll-bar-mode -1))
+#+end_src
+
+On active la police =Source Code Pro=, sinon =Noto Sans=.
+
+#+begin_src emacs-lisp :tangle yes
+(set-face-attribute 'default nil :font "Source Code Pro")
+(set-fontset-font t nil "Noto Sans")
+#+end_src
+
+Le paquet [[https://github.com/hlissner/emacs-doom-themes][doom-themes]] apporte pas mal de thèmes issus du projet Doom-Emacs.
+Couplé à sa modeline, [[https://github.com/seagle0128/doom-modeline][doom-modeline]], on obtient quelque chose de visuellement agréable.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package doom-themes
+  :config
+  (load-theme 'doom-one t)
+  (doom-themes-visual-bell-config)
+  (doom-themes-org-config))
+
+(use-package doom-modeline
+  :after doom-themes
+  :hook
+  (after-init . doom-modeline-mode))
+
+(use-package all-the-icons)
+#+end_src
+
+** QoL
+
+Parceque ça me gonfle de supprimer manuellement les espaces en trop.
+
+#+begin_src emacs-lisp :tangle yes
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
+#+end_src
+
+Je me retrouve souvent avec 3/4 buffer ouvert en même temps, sans pour autant avoir besoin
+d'en consulter l'intégralité. Le paquet [[https://github.com/cyrus-and/zoom][zoom]] permet de redimensionner dynamiquement les frames
+qui ne sont pas consultées.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package zoom
+  :init
+  (zoom-mode 1))
+#+end_src
+
+*** IDO
+
+Depuis Emacs 22, =ido= est intégré et permet énormément de manipulation avec le buffer courant.
+Je ne me suis pas penché sur [[https://github.com/emacs-helm/helm][helm]], =ido= me suffit pour le moment, avec un peu de tunning (ok,
+beaucoup de tunning)
+
+#+begin_src emacs-lisp :tangle yes
+(use-package ido
+  :config
+  (ido-mode 1)
+  (ido-everywhere 1)
+  :init
+  (setq ido-ignore-extensions t
+        ido-save-directory-list-file (concat user-emacs-directory "backups/ido.last")
+        ido-use-virtual-buffers t))
+#+end_src
+
+Je préfère le mode vertical, apporté par le paquet [[https://github.com/creichert/ido-vertical-mode.el][ido-vertical-mode]], surtout quand la recherche
+contient beaucoup d'éléments.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package ido-vertical-mode
+  :after ido
+  :config
+  (ido-vertical-mode 1)
+  :init
+  (setq ido-vertical-define-keys 'C-n-C-p-up-and-down))
+#+end_src
+
+On redéfinit la méthode de recherche avec [[https://github.com/lewang/flx][flx]].
+
+#+begin_src emacs-lisp :tangle yes
+(use-package flx-ido
+  :after ido
+  :config
+  (flx-ido-mode 1)
+  :init
+  (setq ido-enable-flex-matching t
+        ido-use-faces nil))
+#+end_src
+
+Et parceque la commande =(ido-everywhere 1)= n'est pas vraiment "everywhere", le paquet [[https://github.com/DarwinAwardWinner/ido-completing-read-plus][ido-completing-read+]]
+existe, ainsi que [[https://github.com/nonsequitur/smex][smex]].
+
+#+begin_src emacs-lisp :tangle yes
+(use-package ido-completing-read+
+  :after ido
+  :config
+  (ido-ubiquitous-mode 1))
+
+(use-package smex
+  :after (ido general)
+  :general
+  ("M-x" 'smex)
+  :config
+  (setq smex-save-file (concat user-emacs-directory "backups/smex-items")))
+#+end_src
+
+* Programmation
+
+Haaaaaaaa, la sainte section. Avant de spécifier les fonctionnalités de tel ou tel langage,
+on peut d'ores et déjà paramétrer les éléments communs, tel que LSP, le linter, l'auto-completion, etc.
+
+** Coloration syntaxique
+
+On commence par rajouter un peu de couleur, intelligement, avec le paquet [[https://github.com/ankurdave/color-identifiers-mode][color-identifiers-mode]].
+Je ne l'utilise qu'avec une configuration par défaut, mais sachez que l'on peut pousser assez loin
+les choses, et utiliser toutes les propriétés =font-lock-xxx=.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package color-identifiers-mode
+  :hook
+  (after-init . global-color-identifiers-mode))
+#+end_src
+
+** Linter
+
+On ne peut pas parler de linter dans Emacs sans parler de [[https://www.flycheck.org/en/latest/][flycheck]]. En consultant le site, on se rend
+compte rapidemment de la puissance de l'outils. N'utilisant que des langages supportés, j'opte donc
+pour ce linter.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package flycheck
+  :init
+  (global-flycheck-mode)
+  :config
+  (setq flycheck-check-syntax-automatically '(mode-enabled idle-change))
+  (flycheck-add-mode 'css-stylelint 'css-mode)
+  (flycheck-add-mode 'css-stylelint 'web-mode)
+  (flycheck-add-mode 'javascript-eslint 'web-mode)
+  :custom
+  (flycheck-idle-change-delay 0.3)
+  (flycheck-flake8rc "~/.flake8rc")
+  (flycheck-stylelintrc "~/.stylelintrc.json")
+  (flycheck-eslintrc "~/.eslintrc"))
+#+end_src
+
+** Une histoire de parenthèses
+
+Tous ceux qui ont eu le malheur de coder en Lisp (rooo bah quoi ?), ou de trifouiller un tant soit peu
+sa configuration d'Emacs vous le dirons, les parenthèses c'est le mal.
+Du coup, un peu de paramétrage du paquet =paren=, qui est intégré à Emacs, se fait sentir.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package paren
+  :init
+  (set-face-background 'show-paren-match (face-background 'default))
+  (set-face-foreground 'show-paren-match "#afa")
+  (set-face-attribute  'show-paren-match nil :weight 'black)
+  (set-face-background 'show-paren-mismatch (face-background 'default))
+  (set-face-foreground 'show-paren-mismatch "#c66")
+  (set-face-attribute  'show-paren-mismatch nil :weight 'black)
+  (show-paren-mode 1)
+  :config
+  (setq show-paren-delay 0.1
+        show-paren-highlight-openparen t
+        show-paren-when-point-inside-paren t)
+  :hook
+  (after-save . check-parens))
+#+end_src
+
+Et pour pousser la chose un peu plus loin, le paquet [[https://github.com/tarsius/paren-face][paren-face]] va jusqu'à définir une catégorie de =face=
+juste pour les parenthèses, et ainsi, les estomper.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package paren-face
+  :init
+  (global-paren-face-mode))
+#+end_src
+
+** Auto-complétion
+
+J'avais le choix entre [[https://github.com/abo-abo/swiper][Ivy]] et [[https://github.com/company-mode/company-mode][Company]] (écartant le module intégré =auto-complete=).
+C'est finalement =company= que je choisis, puissqu'il s'interface très bien avec LSP.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package company
+  :after general
+  :general
+  ("M-:" 'company-complete-common)
+  :init
+  (setq-default company-dabbrev-ignore-case t
+                company-show-numbers t
+                company-transformers nil)
+  :hook
+  (after-init . global-company-mode))
+#+end_src
+
+On rajoute un peu plus de détails aux éléments proposés avec le paquet [[https://github.com/expez/company-quickhelp][company-quickhelp]].
+
+#+begin_src emacs-lisp :tangle yes
+(use-package company-quickhelp
+  :after company
+  :config
+  (company-quickhelp-mode))
+#+end_src
+
+Et on affiche le tout dans une belle fenêtre retravaillée par le paquet [[https://github.com/sebastiencs/company-box][company-box]].
+
+#+begin_src emacs-lisp :tangle yes
+(use-package company-box
+  :after company
+  :hook
+  (company-mode . company-box-mode))
+#+end_src
+
+** LSP Mode
+
+Je ne refais plus les présentations, c'est déjà fait si vous avez lu le préambule.
+
+Un très bon travail de l'équipe [[https://github.com/emacs-lsp][emacs-lsp]] pour interfacer Emacs avec LSP.
+Le projet contient beaucoup de ressources, avec une doc parfois un peu en retard, mais le support
+est là. Du coup, on hook tout ça avece le =prog-mode=, pour s'attacher à un serveur disponible en
+relation avec le mode majeur du buffer.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package lsp-mode
+  :hook (prog-mode . lsp)
+  :config
+  (setq lsp-prefer-flymake nil
+        lsp-enable-snippet nil))
+#+end_src
+
+On ajoute par-dessus ça le paquet [[https://github.com/emacs-lsp/lsp-ui][lsp-ui]], pour afficher dans le buffer tout ce qui est remonté par
+le serveur.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package lsp-ui
+  :after lsp-mode
+  :config
+  (setq lsp-ui-doc-enable t
+        lsp-ui-doc-use-childframe t
+        lsp-ui-doc-position 'top
+        lsp-ui-doc-include-signature t
+        lsp-ui-sideline-enable t
+        lsp-ui-sideline-show-symbol t
+        lsp-ui-flycheck-enable t
+        lsp-ui-flycheck-list-position 'right
+        lsp-ui-flycheck-live-reporting t
+        lsp-ui-peek-enable t
+        lsp-ui-peek-list-width 60
+        lsp-ui-peek-peek-height 25))
+#+end_src
+
+Sans oublier la compatibilité de =company= apporté par le paquet [[https://github.com/tigersoldier/company-lsp][company-lsp]].
+
+#+begin_src emacs-lisp :tangle yes
+(use-package company-lsp
+  :after (company lsp-mode)
+  :config
+  (push 'company-lsp company-backends)
+  (setq company-lsp-async t
+        company-lsp-cache-candidates 'auto))
+#+end_src
+
+** Langages
+
+*** Python
+
+Le paquet =python= intégré fait le café, on y ajoute juste notre linter et un peu de conf.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package python
+  :after (lsp-mode flycheck)
+  :mode
+  ("\\.py\\'" . python-mode)
+  ("\\.wsgi\\'" . python-mode)
+  :config
+  (setq-default indent-tabs-mode nil)
+  (setq python-indent-offset 4)
+  :hook
+  (python-mode . (lambda () (flycheck-select-checker 'python-flake8))))
+#+end_src
+
+*** JavaScript
+
+N'utilisant que =jQuery= comme framework externe, le paquet [[https://github.com/mooz/js2-mode][js2-mode]] est suffisant pour moi.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package js2-mode
+  :after (lsp-mode flycheck)
+  :mode "\\.js\\'"
+  :config
+  (setq-default js2-basic-indent 2
+                js2-basic-offset 2
+                js2-auto-indent-p t
+                js2-cleanup-whitespace t
+                js2-enter-indents-newline t
+                js2-indent-on-enter-key t
+                js2-global-externs (list "window" "module" "require" "buster" "sinon" "assert" "refute" "setTimeout" "clearTimeout" "setInterval" "clearInterval" "location" "__dirname" "console" "JSON" "jQuery" "$"))
+  :hook
+  (js2-mode . (lambda () (flycheck-select-checker 'javascript-eslint))))
+#+end_src
+
+*** Lisp
+
+Pas grand chose à rajouter. C'est le mode de base d'Emacs.
+Je ne le configure pas plus que ça, ne m'en servant que pour éditer la configuration.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package lisp-mode
+  :ensure nil
+  :hook
+  (emacs-lisp . global-prettify-symbols-mode)
+  (emacs-lisp . turn-on-eldoc-mode)
+  (emacs-lisp . activate-aggressive-indent))
+#+end_src
+
+*** Web
+
+Un petit paquet QoL, [[http://elpa.gnu.org/packages/rainbow-mode.html][rainbow-mode]] permet d'afficher les couleurs HTML avec ce qu'elles représentent.
+Par exemple, =#FF0000= sera sur fond rouge.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package rainbow-mode)
+#+end_src
+
+Le paquet magique [[https://github.com/fxbois/web-mode][web-mode]] est idéal pour mon environnement de travail, puisqu'il permet la gestion
+des templates, chose qui est assez fastidieuse avec [[https://github.com/purcell/mmm-mode][mmm-mode]].
+
+#+begin_src emacs-lisp :tangle yes
+(use-package web-mode
+  :after rainbow-mode
+  :mode ("\\.html\\'" "\\.mako\\'")
+  :hook rainbow-mode
+  :custom
+  (web-mode-attr-indent-offset 2)
+  (web-mode-block-padding 2)
+  (web-mode-css-indent-offset 2)
+  (web-mode-code-indent-offset 2)
+  (web-mode-comment-style 2)
+  (web-mode-enable-current-element-highlight t)
+  (web-mode-markup-indent-offset 2))
+#+end_src
+
+Le graal pour la feignasse que je suis, le paquet [[https://github.com/smihica/emmet-mode][emmet-mode]] permet de générer des bouts
+de code HTML/CSS à partir de mots-clé.
+
+En tapant =button.btn.btn-default=, un coup de <kbd>C-j</kbd> et pouf (non ça fait pas des chocapics),
+on se retrouve avec =<button class="btn btn-default"></button>= avec le curseur au niveau de la valeur.
+Ma-gni-faïque ma chérie.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package emmet-mode
+  :config
+  (setq emmet-indentation 2)
+  (setq emmet-move-cursor-between-quotes t)
+  :hook (css-mode sgml-mode web-mode))
+#+end_src
+
+Le module intégré =css-mode= est suffisant. J'applique juste notre linter.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package css-mode
+  :after flycheck
+  :mode "\\.css\\'"
+  :custom
+  (css-indent-offset 2)
+  :hook
+  (css-mode . (lambda() (flycheck-select-checker 'css-stylelint))))
+#+end_src
+
+Le module =less-css=mode= est lui aussi intégré à Emacs, et dispose lui aussi de son linter.
+Il a pour parent le mode =css-mode=, donc il n'y pas de configuration supplémentaire à faire.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package less-css-mode
+  :after css-mode
+  :mode "\\.less\\'"
+  :hook
+  (less-css-mode . (lambda() (flycheck-select-checker 'less-stylelint))))
+#+end_src
+
+Et pour finir, le paquet [[https://github.com/antonj/scss-mode][scss-mode]], avec son linter.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package scss-mode
+  :after css-mode
+  :mode "\\.scss\\'"
+  :hook
+  (scss-mode . (lambda() (flycheck-select-checker 'scss-stylelint))))
+#+end_src

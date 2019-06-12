@@ -1,0 +1,9 @@
+# .emacs.d
+auto-save-list
+config.el
+network-security.data
+.lsp-session-v1
+
+/backups/
+/elpa/
+/custom/
