@@ -1,6 +1,5 @@
 #+AUTHOR: Camille Gardet
 #+TITLE: Configuration de GNU Emacs
-#+MACRO: kbd @@html:<kbd>@@$1@@html:</kbd>@@
 
 * À propos
 
@@ -218,11 +217,11 @@ le mot-clé =:general=.
 Je redéfinis quelques raccourcis, comme la création/destruction de frames, la navigation entre les
 frames :
 
-- {{{kbd(Alt-0)}}} supprime la frame active
-- {{{kbd(Alt-1)}}} supprime la frame inactive
-- {{{kbd(Alt-2)}}} split la frame horizontalement
-- {{{kbd(Alt-3)}}} split la frame verticalement
-- {{{kbd(Alt-<flèches directionnelles>)}}} navigue entre les frames
+- <kbd> Alt-0 </kbd> supprime la frame active
+- <kbd> Alt-1 </kbd> supprime la frame inactive
+- <kbd> Alt-2 </kbd> split la frame horizontalement
+- <kbd> Alt-3 </kbd> split la frame verticalement
+- <kbd> Alt-<flèches directionnelles> </kbd> navigue entre les frames
 
 Le reste se passant d'explication.
 
@@ -605,7 +604,7 @@ des templates, chose qui est assez fastidieuse avec [[https://github.com/purcell
 Le graal pour la feignasse que je suis, le paquet [[https://github.com/smihica/emmet-mode][emmet-mode]] permet de générer des bouts
 de code HTML/CSS à partir de mots-clé.
 
-En tapant ~button.btn.btn-default~, un coup de {{{kbd(C-j)}}} et pouf (non ça fait pas des chocapics),
+En tapant ~button.btn.btn-default~, un coup de <kbd> C-j </kbd> et pouf (non ça fait pas des chocapics),
 on se retrouve avec ~<button class="btn btn-default"></button>~ avec le curseur au niveau de la valeur.
 Ma-gni-faïque ma chérie.
 
