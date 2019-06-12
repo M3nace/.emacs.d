@@ -627,7 +627,7 @@ Le module intégré =css-mode= est suffisant. J'applique juste notre linter.
   (css-mode . (lambda() (flycheck-select-checker 'css-stylelint))))
 #+end_src
 
-Le module =less-css=mode= est lui aussi intégré à Emacs, et dispose lui aussi de son linter.
+Le module =less-css-mode= est lui aussi intégré à Emacs, et dispose lui aussi de son linter.
 Il a pour parent le mode =css-mode=, donc il n'y pas de configuration supplémentaire à faire.
 
 #+begin_src emacs-lisp :tangle yes
