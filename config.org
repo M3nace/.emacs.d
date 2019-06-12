@@ -1,5 +1,6 @@
 #+AUTHOR: Camille Gardet
 #+TITLE: Configuration de GNU Emacs
+#+MACRO: kbd @@html:<kbd>@@$1@@html:</kbd>@@
 
 * À propos
 
@@ -217,11 +218,11 @@ le mot-clé =:general=.
 Je redéfinis quelques raccourcis, comme la création/destruction de frames, la navigation entre les
 frames :
 
-- <kbd>Alt 0</kbd> supprime la frame active
-- <kbd>Alt 1</kbd> supprime la frame inactive
-- <kbd>Alt 2</kbd> split la frame horizontalement
-- <kbd>Alt 3</kbd> split la frame verticalement
-- <kbd>Alt <flèches directionnelles></kbd> navigue entre les frames
+- {{{kbd(Alt-0)}}} supprime la frame active
+- {{{kbd(Alt-1)}}} supprime la frame inactive
+- {{{kbd(Alt-2)}}} split la frame horizontalement
+- {{{kbd(Alt-3)}}} split la frame verticalement
+- {{{kbd(Alt-<flèches directionnelles>)}}} navigue entre les frames
 
 Le reste se passant d'explication.
 
@@ -296,7 +297,7 @@ Parceque ça me gonfle de supprimer manuellement les espaces en trop.
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
 #+end_src
 
-Je me retrouve souvent avec 3/4 buffer ouvert en même temps, sans pour autant avoir besoin
+Je me retrouve souvent avec 3/4 buffers ouverts en même temps, sans pour autant avoir besoin
 d'en consulter l'intégralité. Le paquet [[https://github.com/cyrus-and/zoom][zoom]] permet de redimensionner dynamiquement les frames
 qui ne sont pas consultées.
 
@@ -310,7 +311,7 @@ qui ne sont pas consultées.
 
 Depuis Emacs 22, =ido= est intégré et permet énormément de manipulation avec le buffer courant.
 Je ne me suis pas penché sur [[https://github.com/emacs-helm/helm][helm]], =ido= me suffit pour le moment, avec un peu de tunning (ok,
-beaucoup de tunning)
+beaucoup de tunning).
 
 #+begin_src emacs-lisp :tangle yes
 (use-package ido
@@ -604,8 +605,8 @@ des templates, chose qui est assez fastidieuse avec [[https://github.com/purcell
 Le graal pour la feignasse que je suis, le paquet [[https://github.com/smihica/emmet-mode][emmet-mode]] permet de générer des bouts
 de code HTML/CSS à partir de mots-clé.
 
-En tapant =button.btn.btn-default=, un coup de <kbd>C-j</kbd> et pouf (non ça fait pas des chocapics),
-on se retrouve avec =<button class="btn btn-default"></button>= avec le curseur au niveau de la valeur.
+En tapant ~button.btn.btn-default~, un coup de {{{kbd(C-j)}}} et pouf (non ça fait pas des chocapics),
+on se retrouve avec ~<button class="btn btn-default"></button>~ avec le curseur au niveau de la valeur.
 Ma-gni-faïque ma chérie.
 
 #+begin_src emacs-lisp :tangle yes
