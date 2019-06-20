@@ -129,7 +129,6 @@ On profite de la présence de nombreuses variables de configurations pour en red
 (prefer-coding-system 'utf-8)                ; pretty
 (setq selection-coding-system 'utf-8         ; pretty
       locale-coding-system 'utf-8            ; please
-      nsm-settings-file (concat user-emacs-directory "nsm/network-security.data")
       gnutls-min-prime-bits 4096             ; Remove the warnings from the GnuTLS library when using HTTPS
       scroll-conservatively 10000            ; Fix the scrolling to keep point in the center
       scroll-preserve-screen-position t)     ; Fix the scrolling to keep point in the center
@@ -395,6 +394,7 @@ pour ce linter.
   (flycheck-add-mode 'css-stylelint 'css-mode)
   (flycheck-add-mode 'css-stylelint 'web-mode)
   (flycheck-add-mode 'javascript-eslint 'web-mode)
+  (flycheck-add-mode 'javascript-eslint 'js2-mode)
   :custom
   (flycheck-idle-change-delay 0.3)
   (flycheck-flake8rc "~/.flake8rc")
@@ -545,7 +545,7 @@ N'utilisant que =jQuery= comme framework externe, le paquet [[https://github.com
 
 #+begin_src emacs-lisp :tangle yes
 (use-package js2-mode
-  :after (lsp-mode flycheck)
+  :after flycheck
   :mode "\\.js\\'"
   :config
   (setq-default js2-basic-indent 2
@@ -588,7 +588,7 @@ des templates, chose qui est assez fastidieuse avec [[https://github.com/purcell
 #+begin_src emacs-lisp :tangle yes
 (use-package web-mode
   :after rainbow-mode
-  :mode ("\\.html\\'" "\\.mako\\'")
+  :mode ("\\.html\\'" "\\.mak\\'")
   :hook rainbow-mode
   :custom
   (web-mode-attr-indent-offset 2)
@@ -615,7 +615,7 @@ Ma-gni-faïque ma chérie.
   :hook (css-mode sgml-mode web-mode))
 #+end_src
 
-Le module intégré =css-mode= est suffisant. J'applique juste notre linter.
+Le module intégré =css-mode= est suffisant. J'applique juste notre linter avec une condition, car les modes LESS/SASS sous des sous-modes de CSS.
 
 #+begin_src emacs-lisp :tangle yes
 (use-package css-mode
@@ -624,7 +624,9 @@ Le module intégré =css-mode= est suffisant. J'applique juste notre linter.
   :custom
   (css-indent-offset 2)
   :hook
-  (css-mode . (lambda() (flycheck-select-checker 'css-stylelint))))
+  (css-mode . (lambda()
+                (when (eq major-mode 'css-mode)
+                  (flycheck-select-checker 'css-stylelint)))))
 #+end_src
 
 Le module =less-css-mode= est lui aussi intégré à Emacs, et dispose lui aussi de son linter.
@@ -632,7 +634,6 @@ Il a pour parent le mode =css-mode=, donc il n'y pas de configuration supplémen
 
 #+begin_src emacs-lisp :tangle yes
 (use-package less-css-mode
-  :after css-mode
   :mode "\\.less\\'"
   :hook
   (less-css-mode . (lambda() (flycheck-select-checker 'less-stylelint))))
@@ -642,7 +643,6 @@ Et pour finir, le paquet [[https://github.com/antonj/scss-mode][scss-mode]], ave
 
 #+begin_src emacs-lisp :tangle yes
 (use-package scss-mode
-  :after css-mode
   :mode "\\.scss\\'"
   :hook
   (scss-mode . (lambda() (flycheck-select-checker 'scss-stylelint))))
