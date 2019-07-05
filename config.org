@@ -35,12 +35,13 @@ tiers que votre gestionnaire paquet possède sûrement :
 Les linters ont des fichiers de configurations situés soit à la racine de votre =home= soit
 à la racine du projet sur lequel vous travaillez.
 
-| Linter | Langage | Fichier de conf. |
-|--------|---------|------------------|
+| Linter    | Langage                       | Fichier de conf.      |
+|-----------+-------------------------------+-----------------------|
 | [[https://stylelint.io/][stylelint]] | CSS (compatible LESS et SASS) | =~/.stylelintrc.json= |
-| [[http://flake8.pycqa.org/en/latest/][flake8]] | Python | =~/.flake8rc= |
-| [[https://eslint.org/][ESLint]] | JavaScript | =~/.eslintrc= |
-|--------|---------|------------------|
+| [[http://flake8.pycqa.org/en/latest/][flake8]]    | Python                        | =~/.flake8rc=         |
+| [[https://www.pylint.org/][pylint]]    | Python                        | =~/.pylintrc=         |
+| [[https://eslint.org/][ESLint]]    | JavaScript                    | =~/.eslintrc=         |
+|-----------+-------------------------------+-----------------------|
 
 Il y a sûrement d'autres linters existant, je pense notamment à l'excellent [[https://github.com/python/black][Black]] pour Python, ou encore
 [[https://flow.org/][Flow]] pour JavaScript, mais cette configuration me suffit.
@@ -304,7 +305,16 @@ qui ne sont pas consultées.
   (zoom-mode 1))
 #+end_src
 
-*** IDO
+Le paquet [[https://github.com/purcell/page-break-lines][page-break-lines]] trace de belles lignes en lieu et place des "^L" tout moche que
+peut afficher Emacs en debug, ou le dashboard.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package page-break-lines
+  :hook
+  (after-init . global-page-break-lines-mode))
+#+end_src
+
+** IDO
 
 Depuis Emacs 22, =ido= est intégré et permet énormément de manipulation avec le buffer courant.
 Je ne me suis pas penché sur [[https://github.com/emacs-helm/helm][helm]], =ido= me suffit pour le moment, avec un peu de tunning (ok,
@@ -362,6 +372,32 @@ existe, ainsi que [[https://github.com/nonsequitur/smex][smex]].
   (setq smex-save-file (concat user-emacs-directory "backups/smex-items")))
 #+end_src
 
+** Tableau de bord
+
+Un bô tableau de bord avec [[https://github.com/emacs-dashboard/emacs-dashboard][emacs-dashboard]], où sont affichés les derniers projets et fichiers édités.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package dashboard
+  :if (< (length command-line-args) 3)
+  :custom
+  (dashboard-banner-logo-title "Rise and shine, Mister Freeman, rise and … shine.")
+  (dashboard-items '((projects)
+                     (recents . 5)))
+  (dashboard-navigator-buttons
+   `(
+     ((,(all-the-icons-material "update" :height 1.2 :v-adjust -0.24)
+      "Update"
+      "Update emacs"
+      (lambda (&rest _) (list-packages))))))
+  (dashboard-set-file-icons t)
+  (dashboard-set-heading-icons t)
+  (dashboard-set-init-info t)
+  (dashboard-set-navigator t)
+  (dashboard-startup-banner 'logo)
+  :config
+  (dashboard-setup-startup-hook))
+#+end_src
+
 * Programmation
 
 Haaaaaaaa, la sainte section. Avant de spécifier les fonctionnalités de tel ou tel langage,
@@ -399,7 +435,34 @@ pour ce linter.
   (flycheck-idle-change-delay 0.3)
   (flycheck-flake8rc "~/.flake8rc")
   (flycheck-stylelintrc "~/.stylelintrc.json")
+  (flycheck-pylintrc "~/.pylintrc")
   (flycheck-eslintrc "~/.eslintrc"))
+#+end_src
+
+** Gestion de projets
+
+J'utilise désormais [[https://www.projectile.mx/en/latest/][projectile]], notamment pour la recherche de patterns dans des fichiers d'un projet.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package projectile
+  :preface
+  (defun my/projectile-compilation-buffers (&optional project)
+    "Get a list of a project's compilation buffers.
+    If PROJECT is not specified the command acts on the current project."
+    (let* ((project-root (or project (projectile-project-root)))
+           (buffer-list (mapcar #'process-buffer compilation-in-progress))
+           (all-buffers (cl-remove-if-not
+                         (lambda (buffer)
+                           (projectile-project-buffer-p buffer project-root))
+                         buffer-list)))
+      (if projectile-buffers-filter-function
+          (funcall projectile-buffers-filter-function all-buffers)
+        all-buffers)))
+  :custom
+  (projectile-enable-caching t)
+  (projectile-keymap-prefix (kbd "C-c C-p"))
+  (projectile-mode-line '(:eval (projectile-project-name)))
+  :config (projectile-mode))
 #+end_src
 
 ** Une histoire de parenthèses
