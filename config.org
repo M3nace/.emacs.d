@@ -132,8 +132,11 @@ On profite de la présence de nombreuses variables de configurations pour en red
       locale-coding-system 'utf-8            ; please
       gnutls-min-prime-bits 4096             ; Remove the warnings from the GnuTLS library when using HTTPS
       scroll-conservatively 10000            ; Fix the scrolling to keep point in the center
-      scroll-preserve-screen-position t)     ; Fix the scrolling to keep point in the center
-      visible-bell t                         ; No beeps
+      scroll-preserve-screen-position t      ; Fix the scrolling to keep point in the center
+      visible-bell t)                        ; No beeps
+
+(setq nsm-settings-file (expand-file-name (concat user-emacs-directory "custom/network-security.data"))
+      recentf-save-file (expand-file-name (concat user-emacs-directory "custom/recentf")))
 
 (setq-default
       ad-redefinition-action 'accept         ; Silence advised function warnings
@@ -314,6 +317,16 @@ peut afficher Emacs en debug, ou le dashboard.
   (after-init . global-page-break-lines-mode))
 #+end_src
 
+Une petite coloration des colonnes pour l'indentation, pour savoir où l'on se trouve lors du parcours
+d'un looooong fichier indenté. Le paquet [[https://github.com/DarthFennec/highlight-indent-guides][highlight-indent-guides]] est là pour ça.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package highlight-indent-guides
+  :hook (prog-mode . highlight-indent-guides-mode)
+  :config
+  (setq highlight-indent-guides-method 'column))
+#+end_src
+
 ** IDO
 
 Depuis Emacs 22, =ido= est intégré et permet énormément de manipulation avec le buffer courant.
@@ -462,6 +475,8 @@ J'utilise désormais [[https://www.projectile.mx/en/latest/][projectile]], notam
   (projectile-enable-caching t)
   (projectile-keymap-prefix (kbd "C-c C-p"))
   (projectile-mode-line '(:eval (projectile-project-name)))
+  (projectile-cache-file (expand-file-name (format "%s/custom/projectile.cache" user-emacs-directory)))
+  (projectile-known-projects-file (expand-file-name (format "%s/custom/projectile-bookmarks.eld" user-emacs-directory)))
   :config (projectile-mode))
 #+end_src
 
@@ -634,6 +649,16 @@ Je ne le configure pas plus que ça, ne m'en servant que pour éditer la configu
   (emacs-lisp . global-prettify-symbols-mode)
   (emacs-lisp . turn-on-eldoc-mode)
   (emacs-lisp . activate-aggressive-indent))
+#+end_src
+
+*** YAML
+
+Le paquet [[https://github.com/yoshiki/yaml-mode][yaml-mode]] est suffisant pour la coloration syntaxique et l'indentation automatique.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package yaml-mode
+  :mode
+  ("\\.yml\\'" . yaml-mode))
 #+end_src
 
 *** Web
