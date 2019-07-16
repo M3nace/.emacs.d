@@ -192,7 +192,7 @@ La sauvegarde c'est important, mais Emacs s'y prend un peu à l'arrache, alors o
 
 (setq-default auto-save-list-file-name (concat user-emacs-directory "backups/auto-save-list"))
 (setq backup-directory-alist `(("." . ,(expand-file-name (concat user-emacs-directory "backups"))))
-      delete-old-versions nil
+      delete-old-versions t
       history-delete-duplicates t
       history-length t
       savehist-additional-variables '(kill-ring search-ring regexp-search-ring)
@@ -288,6 +288,22 @@ Couplé à sa modeline, [[https://github.com/seagle0128/doom-modeline][doom-mode
   (after-init . doom-modeline-mode))
 
 (use-package all-the-icons)
+#+end_src
+
+[[https://github.com/TeMPOraL/nyan-mode][Nyanyanyanyanyanyanya! ♬ ♫ ♪ ♩]]
+
+#+begin_src emacs-lisp :tangle yes
+(use-package nyan-mode
+  :config
+  (nyan-mode)
+  (nyan-start-animation)
+  :custom
+  (nyan-animate-nyancat t)
+  (nyan-animation-frame-interval .1)
+  (nyan-bar-length 64)
+  (nyan-wavy-trail t)
+  :hook
+  (doom-modeline-mode . nyan-mode))
 #+end_src
 
 ** QoL
