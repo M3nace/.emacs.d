@@ -278,7 +278,7 @@ Couplé à sa modeline, [[https://github.com/seagle0128/doom-modeline][doom-mode
 #+begin_src emacs-lisp :tangle yes
 (use-package doom-themes
   :config
-  (load-theme 'doom-one t)
+  (load-theme 'doom-molokai t)
   (doom-themes-visual-bell-config)
   (doom-themes-org-config))
 
@@ -299,8 +299,8 @@ Couplé à sa modeline, [[https://github.com/seagle0128/doom-modeline][doom-mode
   (nyan-start-animation)
   :custom
   (nyan-animate-nyancat t)
-  (nyan-animation-frame-interval .1)
-  (nyan-bar-length 64)
+  (nyan-animation-frame-interval .2)
+  (nyan-bar-length 20)
   (nyan-wavy-trail t)
   :hook
   (doom-modeline-mode . nyan-mode))
