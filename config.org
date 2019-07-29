@@ -395,8 +395,7 @@ existe, ainsi que [[https://github.com/nonsequitur/smex][smex]].
 
 (use-package smex
   :after (ido general)
-  :general
-  ("M-x" 'smex)
+  :general ("M-x" 'smex)
   :config
   (setq smex-save-file (concat user-emacs-directory "backups/smex-items")))
 #+end_src
@@ -425,6 +424,146 @@ Un bô tableau de bord avec [[https://github.com/emacs-dashboard/emacs-dashboard
   (dashboard-startup-banner 'logo)
   :config
   (dashboard-setup-startup-hook))
+#+end_src
+
+** Ibuffer
+
+Avec pleins de buffers ouverts, c'est la à s'y retrouver (surtout entre les buffers entre projets).
+Intégré à Emacs depuis sa version 22, =ibuffer= permet d'avoir une belle page consacrée à la gestion des buffers.
+Et vu que j'utilise =projectile=, le paquet [[https://github.com/purcell/ibuffer-projectile][ibuffer-projectile]] permet de trier tout ça en fonction des projets.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package ibuffer
+  :after general
+  :general ("C-x C-b" 'ibuffer)
+  :config
+  (setq ibuffer-filter-group-name-face '(:inherit (font-lock-string-face bold)))
+
+  (define-ibuffer-column icon (:name "  ")
+    (let ((icon (if (and (buffer-file-name)
+                         (all-the-icons-auto-mode-match?))
+                    (all-the-icons-icon-for-file (file-name-nondirectory (buffer-file-name)) :v-adjust -0.05)
+                  (all-the-icons-icon-for-mode major-mode :v-adjust -0.05))))
+      (if (symbolp icon)
+          (setq icon (all-the-icons-faicon "file-o" :face 'all-the-icons-dsilver :height 0.8 :v-adjust 0.0))
+        icon)))
+
+  (setq ibuffer-formats `((mark modified read-only ,
+                                " " (icon 2 2 :left :elide)
+                                ,(propertize " " 'display `(space :align-to 8))
+                                (name 18 18 :left :elide)
+                                " " (size 9 -1 :right)
+                                " " (mode 16 16 :left :elide) " " filename-and-process)
+                          (mark " " (name 16 -1) " " filename))))
+
+(use-package ibuffer-projectile
+  :hook ((ibuffer . (lambda ()
+                      (ibuffer-projectile-set-filter-groups)
+                      (unless (eq ibuffer-sorting-mode 'alphabetic)
+                        (ibuffer-do-sort-by-alphabetic)))))
+  :config
+  (setq ibuffer-projectile-prefix
+        (if (display-graphic-p)
+            (concat
+             (all-the-icons-octicon "file-directory"
+                                    :face ibuffer-filter-group-name-face
+                                    :v-adjust -0.05
+                                    :height 1.25)
+             " ")
+          "Project: ")))
+#+end_src
+
+** Dired
+
+Parceque =Nautilus= c'est dépassé, on ajoute aux modules =dired=, =dired-aux=, et =dired-x=, intégrés à Emacs, les paquets [[https://github.com/purcell/diredfl][diredfl]], [[https://github.com/jtbm37/all-the-icons-dired][ati-dired]].
+
+#+begin_src emacs-lisp :tangle yes
+(use-package dired
+  :ensure nil
+  :config
+  (setq dired-recursive-deletes 'always
+        dired-recursive-copies 'always)
+
+  (setq ls-lisp-use-insert-directory-program t)
+  (setq dired-listing-switches "-alh --group-directories-first")
+
+  ;; Colourful dired
+  (use-package diredfl
+    :init (diredfl-global-mode 1))
+
+  ;; Shows icons
+  (use-package all-the-icons-dired
+    :diminish
+    :custom-face (all-the-icons-dired-dir-face ((t (:foreground nil))))
+    :hook (dired-mode . all-the-icons-dired-mode)
+    :config
+    (defun my-all-the-icons-dired--display ()
+      "Display the icons of files without colors in a dired buffer."
+      (when dired-subdir-alist
+        (let ((inhibit-read-only t)
+              (remote-p (and (fboundp 'tramp-tramp-file-p)
+                             (tramp-tramp-file-p default-directory))))
+          (save-excursion
+            ;; TRICK: Use TAB to align icons
+            (setq-local tab-width 1)
+            (goto-char (point-min))
+            (while (not (eobp))
+              (when (dired-move-to-filename nil)
+                (insert " ")
+                (let ((file (dired-get-filename 'verbatim t)))
+                  (unless (member file '("." ".."))
+                    (let ((filename (file-local-name (dired-get-filename nil t))))
+                      (if (file-directory-p filename)
+                          (let ((icon (cond
+                                       (remote-p
+                                        (all-the-icons-octicon "file-directory"
+                                                               :v-adjust all-the-icons-dired-v-adjust
+                                                               :face 'all-the-icons-dired-dir-face))
+                                       ((file-symlink-p filename)
+                                        (all-the-icons-octicon "file-symlink-directory"
+                                                               :v-adjust all-the-icons-dired-v-adjust
+                                                               :face 'all-the-icons-dired-dir-face))
+                                       ((all-the-icons-dir-is-submodule filename)
+                                        (all-the-icons-octicon "file-submodule"
+                                                               :v-adjust all-the-icons-dired-v-adjust
+                                                               :face 'all-the-icons-dired-dir-face))
+                                       ((file-exists-p (format "%s/.git" filename))
+                                        (all-the-icons-octicon "repo"
+                                                               :height 1.1
+                                                               :v-adjust all-the-icons-dired-v-adjust
+                                                               :face 'all-the-icons-dired-dir-face))
+                                       (t (let ((matcher (all-the-icons-match-to-alist
+                                                          file all-the-icons-dir-icon-alist)))
+                                            (apply (car matcher)
+                                                   (list (cadr matcher)
+                                                         :face 'all-the-icons-dired-dir-face
+                                                         :v-adjust all-the-icons-dired-v-adjust)))))))
+                            (insert icon))
+                        (insert (all-the-icons-icon-for-file file :v-adjust all-the-icons-dired-v-adjust))))
+                    (insert "\t "))))   ; Align and keep one space for refeshing after operations
+              (forward-line 1))))))
+    (advice-add #'all-the-icons-dired--display :override #'my-all-the-icons-dired--display))
+
+  (use-package dired-aux
+    :ensure nil)
+
+  (use-package dired-x
+    :ensure nil
+    :demand
+    :config
+    (setq dired-guess-shell-alist-user
+          `(("\\.pdf\\'" ,"xdg-open")
+            ("\\.docx\\'" ,"xdg-open")
+            ("\\.\\(?:jpg\\|jpeg\\|png\\|gif\\|xpm\\)\\'" ,"xdg-open")
+            ("\\.csv\\'" ,"xdg-open")
+            ("\\.tex\\'" ,"xdg-open")
+            ("\\.\\(?:mp4\\|mkv\\|avi\\|flv\\|rm\\|rmvb\\|ogv\\)\\(?:\\.part\\)?\\'" ,"xdg-open")
+            ("\\.html?\\'" ,"xdg-open")
+            ("\\.md\\'" ,"xdg-open")))
+
+    (setq dired-omit-files
+          (concat dired-omit-files
+                  "\\|^.projectile$\\|^.git*\\|^.svn$\\|^.vscode$\\|\\.js\\.meta$\\|\\.meta$\\|\\.elc$\\|^.emacs.*"))))
 #+end_src
 
 * Programmation
@@ -537,8 +676,7 @@ C'est finalement =company= que je choisis, puissqu'il s'interface très bien ave
 #+begin_src emacs-lisp :tangle yes
 (use-package company
   :after general
-  :general
-  ("M-:" 'company-complete-common)
+  :general ("M-:" 'company-complete-common)
   :init
   (setq-default company-dabbrev-ignore-case t
                 company-show-numbers t
