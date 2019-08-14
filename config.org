@@ -155,7 +155,7 @@ On profite de la présence de nombreuses variables de configurations pour en red
       fringe-indicator-alist (delq (assq 'continuation fringe-indicator-alist)
                                     fringe-indicator-alist)
       highlight-nonselected-windows nil
-      ibuffer-use-other-window t
+      ibuffer-use-other-window nil
       idle-update-delay 2                    ; Update ui less often
       image-animate-loop t
       indent-tabs-mode nil                   ; Indent with spaaaaaaaaaaaaace
@@ -409,8 +409,8 @@ Un bô tableau de bord avec [[https://github.com/emacs-dashboard/emacs-dashboard
   :if (< (length command-line-args) 3)
   :custom
   (dashboard-banner-logo-title "Rise and shine, Mister Freeman, rise and … shine.")
-  (dashboard-items '((projects)
-                     (recents . 5)))
+  (dashboard-items '((projects . 15)
+                     (recents . 15)))
   (dashboard-navigator-buttons
    `(
      ((,(all-the-icons-material "update" :height 1.2 :v-adjust -0.24)
@@ -457,6 +457,7 @@ Et vu que j'utilise =projectile=, le paquet [[https://github.com/purcell/ibuffer
                           (mark " " (name 16 -1) " " filename))))
 
 (use-package ibuffer-projectile
+  :after (ibuffer projectile)
   :hook ((ibuffer . (lambda ()
                       (ibuffer-projectile-set-filter-groups)
                       (unless (eq ibuffer-sorting-mode 'alphabetic)
