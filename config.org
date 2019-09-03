@@ -416,7 +416,7 @@ Un bô tableau de bord avec [[https://github.com/emacs-dashboard/emacs-dashboard
      ((,(all-the-icons-material "update" :height 1.2 :v-adjust -0.24)
       "Update"
       "Update emacs"
-      (lambda (&rest _) (list-packages))))))
+      (lambda (&rest _) (paradox-list-packages))))))
   (dashboard-set-file-icons t)
   (dashboard-set-heading-icons t)
   (dashboard-set-init-info t)
